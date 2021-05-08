@@ -11,10 +11,152 @@
 
 
 <body>
+<script>
+  
 
-测试
+var canvas;
+var gl;
+var shader;
+var batcher;
+var mvp = new spine.webgl.Matrix4();
+var assetManager;
+var skeletonRenderer;
 
+var lastFrameTime;
+var spineboy;
 
+function init () {
+  // 设置画布和WebGL上下文。我们将alpha:false传递给canvas.getContext（），因此，在以下情况下，我们不使用预乘alpha
+  // 加载纹理。由PolygonBatcher单独处理。
+	canvas = document.getElementById("canvas");
+	canvas.width = window.innerWidth;
+	canvas.height = window.innerHeight;
+	var config = { alpha: false };
+	gl = canvas.getContext("webgl", config) || canvas.getContext("experimental-webgl", config);
+	if (!gl) {
+		alert('WebGL is unavailable.');
+		return;
+	}
 
+	// 创建一个简单的着色器，网格，模型视图投影矩阵，SkeletonRenderer和AssetManager。
+	shader = spine.webgl.Shader.newTwoColoredTextured(gl);
+	batcher = new spine.webgl.PolygonBatcher(gl);
+	mvp.ortho2d(0, 0, canvas.width - 1, canvas.height - 1);
+	skeletonRenderer = new spine.webgl.SkeletonRenderer(gl);
+	assetManager = new spine.webgl.AssetManager(gl);
+
+	// 告诉AssetManager为每个骨架加载资源，包括导出的.skel文件，.atlas文件和.png
+  // 提交地图集。 然后，我们等待直到所有资源都加载到load（）方法中。
+	assetManager.loadBinary("assets/spineboy-pro.skel");
+	assetManager.loadTextureAtlas("assets/spineboy-pma.atlas");
+	requestAnimationFrame(load);
+}
+
+function load () {
+	// 等待直到AssetManager加载了所有资源，然后加载框架。
+	if (assetManager.isLoadingComplete()) {
+		spineboy = loadSpineboy("run", true);
+		lastFrameTime = Date.now() / 1000;
+		requestAnimationFrame(render); //加载完成，每隔一帧调用一次render。
+	} else {
+		requestAnimationFrame(load);
+	}
+}
+
+function loadSpineboy (initialAnimation, premultipliedAlpha) {
+	// 从AssetManager加载纹理图集。
+	var atlas = assetManager.get("assets/spineboy-pma.atlas");
+
+	// 创建一个AtlasAttachmentLoader，用于解析区域，网格，边界框和路径附件
+	var atlasLoader = new spine.AtlasAttachmentLoader(atlas);
+
+	// 创建一个SkeletonBinary实例来解析.skel文件。
+	var skeletonBinary = new spine.SkeletonBinary(atlasLoader);
+
+	// 设置要在解析期间应用的缩放比例，解析文件并创建新骨架。
+	skeletonBinary.scale = 1;
+	var skeletonData = skeletonBinary.readSkeletonData(assetManager.get("assets/spineboy-pro.skel"));
+	var skeleton = new spine.Skeleton(skeletonData);
+	var bounds = calculateSetupPoseBounds(skeleton);
+
+	// 创建一个AnimationState，然后将初始动画设置为循环模式。
+	var animationStateData = new spine.AnimationStateData(skeleton.data);
+	var animationState = new spine.AnimationState(animationStateData);
+	animationState.setAnimation(0, initialAnimation, true);
+
+	// 打包所有内容并返回给调用方。
+	return { skeleton: skeleton, state: animationState, bounds: bounds, premultipliedAlpha: premultipliedAlpha };
+}
+
+function calculateSetupPoseBounds (skeleton) {
+	skeleton.setToSetupPose();
+	skeleton.updateWorldTransform();
+	var offset = new spine.Vector2();
+	var size = new spine.Vector2();
+	skeleton.getBounds(offset, size, []);
+	return { offset: offset, size: size };
+}
+
+function render () {
+	var now = Date.now() / 1000;
+	var delta = now - lastFrameTime;
+	lastFrameTime = now;
+
+	// 更新MVP矩阵以适应画布大小更改
+	resize();
+
+	gl.clearColor(0.3, 0.3, 0.3, 1);
+	gl.clear(gl.COLOR_BUFFER_BIT);
+
+	// 根据变化时间应用动画状态。
+	var skeleton = spineboy.skeleton;
+	var state = spineboy.state;
+	var premultipliedAlpha = spineboy.premultipliedAlpha;
+	state.update(delta);
+	state.apply(skeleton);
+	skeleton.updateWorldTransform();
+
+	// 绑定着色器，并设置纹理和模型视图投影矩阵。
+	shader.bind();
+	shader.setUniformi(spine.webgl.Shader.SAMPLER, 0);
+	shader.setUniform4x4f(spine.webgl.Shader.MVP_MATRIX, mvp.values);
+
+	// 开始批处理，并告诉SkeletonRenderer渲染活动骨架。
+	batcher.begin(shader);
+	skeletonRenderer.premultipliedAlpha = premultipliedAlpha;
+	skeletonRenderer.draw(batcher, skeleton);
+	batcher.end();
+
+	shader.unbind();
+
+	requestAnimationFrame(render);
+}
+
+function resize () {
+	var w = canvas.clientWidth;
+	var h = canvas.clientHeight;
+	if (canvas.width != w || canvas.height != h) {
+		canvas.width = w;
+		canvas.height = h;
+	}
+
+	// 将骨架在画布中居中的计算。
+	var bounds = spineboy.bounds;
+	var centerX = bounds.offset.x + bounds.size.x / 2;
+	var centerY = bounds.offset.y + bounds.size.y / 2;
+	var scaleX = bounds.size.x / canvas.width;
+	var scaleY = bounds.size.y / canvas.height;
+	var scale = Math.max(scaleX, scaleY) * 1.2;
+	if (scale < 1) scale = 1;
+	var width = canvas.width * scale;
+	var height = canvas.height * scale;
+
+	mvp.ortho2d(centerX - width / 2, centerY - height / 2, width, height);
+	gl.viewport(0, 0, canvas.width, canvas.height);
+}
+
+init();
+
+</script>
 </body>
 </html>

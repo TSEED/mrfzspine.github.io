@@ -47,7 +47,7 @@ function init () {
 	// 创建一个简单的着色器，网格，模型视图投影矩阵，SkeletonRenderer和AssetManager。
 	shader = spine.webgl.Shader.newTwoColoredTextured(gl);
 	batcher = new spine.webgl.PolygonBatcher(gl);
-	mvp.ortho2d(0, 0, canvas.width - 0.5, canvas.height - 0.5);
+	mvp.ortho2d(0, 0, canvas.width - 1, canvas.height - 1);
 	skeletonRenderer = new spine.webgl.SkeletonRenderer(gl);
 	assetManager = new spine.webgl.AssetManager(gl);
 
@@ -148,8 +148,8 @@ function resize () {
 
 	// 将骨架在画布中居中的计算。
 	var bounds = spineboy.bounds;
-	var centerX = bounds.offset.x + bounds.size.x / 2;
-	var centerY = bounds.offset.y + bounds.size.y / 2;
+	var centerX = bounds.offset.x + bounds.size.x ; //var centerX = bounds.offset.x + bounds.size.x / 2;
+	var centerY = bounds.offset.y + bounds.size.y ; //var centerY = bounds.offset.y + bounds.size.y / 2;
 	var scaleX = bounds.size.x / canvas.width;
 	var scaleY = bounds.size.y / canvas.height;
 	var scale = Math.max(scaleX, scaleY) * 1.2;

@@ -157,7 +157,7 @@ function resize () {
 	var width = canvas.width * scale;
 	var height = canvas.height * scale;
 
-	mvp.ortho2d(centerX - width /2, centerY - height /2 , width, height);//mvp.ortho2d(centerX - width / 2, centerY - height / 2, width, height);
+	mvp.ortho2d(centerX - width /4, centerY - height /4 , width, height);//mvp.ortho2d(centerX - width / 2, centerY - height / 2, width, height);
 	gl.viewport(0, 0, canvas.width*2, canvas.height*2);
 }
 

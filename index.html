@@ -148,8 +148,8 @@ function resize () {
 
 	// 将骨架在画布中居中的计算。
 	var bounds = spineboy.bounds;
-	var centerX = bounds.offset.x + bounds.size.x ; //var centerX = bounds.offset.x + bounds.size.x / 2;
-	var centerY = bounds.offset.y + bounds.size.y ; //var centerY = bounds.offset.y + bounds.size.y / 2;
+	var centerX = bounds.offset.x + bounds.size.x /2 ; //var centerX = bounds.offset.x + bounds.size.x / 2;
+	var centerY = bounds.offset.y + bounds.size.y /2; //var centerY = bounds.offset.y + bounds.size.y / 2;
 	var scaleX = bounds.size.x / canvas.width;
 	var scaleY = bounds.size.y / canvas.height;
 	var scale = Math.max(scaleX, scaleY) * 1.2;
@@ -157,7 +157,7 @@ function resize () {
 	var width = canvas.width * scale;
 	var height = canvas.height * scale;
 
-	mvp.ortho2d(centerX - width / 2, centerY - height / 2, width, height);
+	mvp.ortho2d(centerX - width , centerY - height , width, height);//mvp.ortho2d(centerX - width / 2, centerY - height / 2, width, height);
 	gl.viewport(0, 0, canvas.width, canvas.height);
 }
 
